@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">DailyNest</string>
+    <string name="title_activity_main">DailyNest</string>
+    <string name="package_name">com.ajaypds.dailynest</string>
+    <string name="custom_url_scheme">com.ajaypds.dailynest</string>
+</resources>
