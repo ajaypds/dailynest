@@ -1,4 +1,5 @@
 import React from 'react';
+import { Loader2 } from 'lucide-react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectUser, selectAuthLoading } from '../features/auth/authSlice';
@@ -12,7 +13,11 @@ const ProtectedRoute = ({ children }) => {
     const location = useLocation();
 
     if (loading) {
-        return <div className="flex h-screen items-center justify-center">Loading...</div>;
+        return (
+            <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+                <Loader2 className="animate-spin text-primary-500" size={48} />
+            </div>
+        );
     }
 
     if (!user) {

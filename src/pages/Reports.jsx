@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { ArrowLeft, PieChart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, PieChart, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import dayjs from 'dayjs';
 
 const Reports = () => {
@@ -79,7 +79,7 @@ const Reports = () => {
                     <div className="flex items-center justify-between">
                         <button
                             onClick={handlePrevMonth}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition"
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition text-gray-700 dark:text-gray-300"
                         >
                             <ChevronLeft size={20} />
                         </button>
@@ -89,7 +89,7 @@ const Reports = () => {
                         <button
                             onClick={handleNextMonth}
                             disabled={dayjs(selectedDate).isAfter(dayjs(), 'month')}
-                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed text-gray-700 dark:text-gray-300"
                         >
                             <ChevronRight size={20} />
                         </button>
@@ -108,7 +108,9 @@ const Reports = () => {
 
                 {/* Category Breakdown */}
                 {loading ? (
-                    <div className="text-center py-8 text-gray-500 dark:text-gray-400">Loading...</div>
+                    <div className="flex justify-center py-8">
+                        <Loader2 className="animate-spin text-primary-500" size={32} />
+                    </div>
                 ) : Object.keys(groupedExpenses).length === 0 ? (
                     <div className="text-center py-8 text-gray-500 dark:text-gray-400">
                         No expenses for this month

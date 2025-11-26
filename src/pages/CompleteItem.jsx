@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import { selectPendingItems } from '../features/items/itemsSlice';
 import { updateItem } from '../services/firestoreService';
 import { selectUser } from '../features/auth/authSlice';
-import { ArrowLeft, Check } from 'lucide-react';
+import { ArrowLeft, Check, Loader2 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 
 const CompleteItem = () => {
@@ -14,7 +14,7 @@ const CompleteItem = () => {
     const user = useSelector(selectUser);
     const item = items.find(i => i.id === id);
 
-    const [price, setPrice] = useState('');
+    const [price, setPrice] = useState(item?.price || '');
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
@@ -24,7 +24,11 @@ const CompleteItem = () => {
         }
     }, [item, items, navigate]);
 
-    if (!item) return <div className="p-8 text-center text-gray-500 dark:text-gray-400">Item not found or loading...</div>;
+    if (!item) return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+            <Loader2 className="animate-spin text-primary-500" size={32} />
+        </div>
+    );
 
     const handleSubmit = async (e) => {
         e.preventDefault();
