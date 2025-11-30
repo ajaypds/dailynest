@@ -11,6 +11,8 @@ import {
 import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 
+import { App } from '@capacitor/app';
+
 const Settings = () => {
     const navigate = useNavigate();
     const [types, setTypes] = useState([]);
@@ -18,6 +20,20 @@ const Settings = () => {
     const [newType, setNewType] = useState('');
     const [newUnit, setNewUnit] = useState('');
     const [loading, setLoading] = useState({ type: false, unit: false });
+    const [appVersion, setAppVersion] = useState('1.0.0');
+
+    useEffect(() => {
+        const getAppVersion = async () => {
+            try {
+                const info = await App.getInfo();
+                setAppVersion(`${info.version} (${info.build})`);
+            } catch (error) {
+                console.log('Error getting app info:', error);
+                // Fallback for web dev if needed, though 1.0.0 default is fine
+            }
+        };
+        getAppVersion();
+    }, []);
 
     useEffect(() => {
         const unsubscribeTypes = subscribeToTypesWithIds((fetchedTypes) => {
@@ -181,6 +197,12 @@ const Settings = () => {
                         )}
                     </div>
                 </section>
+
+                <div className="text-center pt-8 pb-4">
+                    <p className="text-xs text-gray-400 dark:text-gray-500">
+                        App Version {appVersion}
+                    </p>
+                </div>
             </main>
         </div>
     );

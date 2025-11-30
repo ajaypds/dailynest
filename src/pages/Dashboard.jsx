@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { subscribeToPendingItems, updateItem, subscribeToUnits } from '../services/firestoreService';
+import { subscribeToPendingItems, updateItem, subscribeToUnits, subscribeToTypes } from '../services/firestoreService';
 import { setItems, selectPendingItems } from '../features/items/itemsSlice';
 import { logout, selectUser } from '../features/auth/authSlice';
 import { auth } from '../config/firebase';
@@ -19,22 +19,29 @@ const Dashboard = () => {
     const { isDark, toggleTheme } = useTheme();
 
     const [editingId, setEditingId] = useState(null);
-    const [units, setUnits] = useState(['Piece']); // Default value
+    const [units, setUnits] = useState(['Piece']);
+    const [types, setTypes] = useState(['Grocery']);
     const [editForm, setEditForm] = useState({
         name: '',
         quantity: '',
         unit: '',
+        type: '',
         note: ''
     });
 
-    // Fetch units from Firestore
+    // Fetch units and types from Firestore
     useEffect(() => {
         const unsubscribeUnits = subscribeToUnits((fetchedUnits) => {
             setUnits(fetchedUnits);
         });
 
+        const unsubscribeTypes = subscribeToTypes((fetchedTypes) => {
+            setTypes(fetchedTypes);
+        });
+
         return () => {
             unsubscribeUnits();
+            unsubscribeTypes();
         };
     }, []);
 
@@ -56,13 +63,14 @@ const Dashboard = () => {
             name: item.name,
             quantity: item.quantity,
             unit: item.unit,
+            type: item.type,
             note: item.note || ''
         });
     };
 
     const handleCancelEdit = () => {
         setEditingId(null);
-        setEditForm({ name: '', quantity: '', unit: '', note: '' });
+        setEditForm({ name: '', quantity: '', unit: '', type: '', note: '' });
     };
 
     const handleSaveEdit = async () => {
@@ -73,6 +81,7 @@ const Dashboard = () => {
                 name: editForm.name,
                 quantity: Number(editForm.quantity),
                 unit: editForm.unit,
+                type: editForm.type,
                 note: editForm.note
             });
             setEditingId(null);
@@ -87,13 +96,29 @@ const Dashboard = () => {
         setEditForm(prev => ({ ...prev, [name]: value }));
     };
 
+    const getDisplayName = (user) => {
+        if (user?.displayName) return user.displayName.split(' ')[0];
+
+        if (user?.email) {
+            const email = user.email.toLowerCase();
+            if (email.includes('ajay')) return 'Ajay';
+            if (email.includes('wife')) return 'Puja';
+
+            // Fallback: Capitalize first part of email
+            const namePart = email.split('@')[0];
+            return namePart.charAt(0).toUpperCase() + namePart.slice(1);
+        }
+
+        return 'User';
+    };
+
     return (
         <div className="h-screen overflow-y-auto bg-gray-50 dark:bg-gray-900 pb-24">
             {/* Header */}
             <header className="bg-white dark:bg-gray-800 p-4 shadow-sm sticky top-0 z-10 flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-primary-800 dark:text-primary-400">DailyNest</h1>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Welcome, {user?.displayName?.split(' ')[0] || 'User'}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">Welcome, {getDisplayName(user)}</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <button onClick={toggleTheme} className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition">
@@ -162,6 +187,17 @@ const Dashboard = () => {
                                                     </SelectContent>
                                                 </Select>
                                             </div>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <label className="text-xs text-gray-500 dark:text-gray-400 font-medium ml-1">Category</label>
+                                            <Select value={editForm.type} onValueChange={(value) => setEditForm(prev => ({ ...prev, type: value }))}>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {types.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                                                </SelectContent>
+                                            </Select>
                                         </div>
                                         <div className="space-y-1">
                                             <label className="text-xs text-gray-500 dark:text-gray-400 font-medium ml-1">Note (Optional)</label>

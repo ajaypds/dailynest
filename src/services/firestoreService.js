@@ -9,7 +9,9 @@ import {
     where,
     orderBy,
     serverTimestamp,
-    getDocs
+    getDocs,
+    limit,
+    startAfter
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -35,7 +37,7 @@ export const addItem = async (itemData, userId) => {
             ...itemData,
             createdBy: userId,
             createdAt: serverTimestamp(),
-            status: 'pending', // pending, completed
+            status: itemData.status || 'pending', // pending, completed
         });
         return docRef.id;
     } catch (error) {
@@ -90,6 +92,37 @@ export const subscribeToPendingItems = (callback) => {
     }, (error) => {
         console.error("Error subscribing to pending items:", error);
     });
+};
+
+export const fetchCompletedItems = async ({ lastDoc = null, pageSize = 20 }) => {
+    try {
+        let q = query(
+            collection(db, ITEMS_COLLECTION),
+            where('status', '==', 'completed'),
+            orderBy('purchasedAt', 'desc'),
+            limit(pageSize)
+        );
+
+        if (lastDoc) {
+            q = query(q, startAfter(lastDoc));
+        }
+
+        const snapshot = await getDocs(q);
+        const items = snapshot.docs.map(doc => ({
+            ...serializeItem(doc),
+            doc // Keep the doc reference for pagination
+        }));
+
+        const lastVisible = snapshot.docs[snapshot.docs.length - 1];
+
+        return {
+            items,
+            lastDoc: lastVisible
+        };
+    } catch (error) {
+        console.error("Error fetching completed items:", error);
+        throw error;
+    }
 };
 
 export const subscribeToCompletedItems = (callback) => {
