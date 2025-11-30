@@ -17,6 +17,7 @@ import { initializePushNotifications, addPushNotificationListeners } from './ser
 import { saveUserToken } from './services/firestoreService';
 import { StatusBar, Style } from '@capacitor/status-bar';
 import { App as CapacitorApp } from '@capacitor/app';
+import { SocialLogin } from '@capgo/capacitor-social-login';
 
 function App() {
     const dispatch = useDispatch();
