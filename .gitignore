@@ -40,3 +40,7 @@ ui-debug.log
 
 # Capacitor
 /www
+capacitor.config.json
+
+# CMD
+build.bat

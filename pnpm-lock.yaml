@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@capacitor-firebase/authentication':
-        specifier: ^7.4.0
-        version: 7.4.0(@capacitor/core@7.4.4)(firebase@10.14.1)
       '@capacitor-firebase/messaging':
         specifier: ^7.4.0
         version: 7.4.0(@capacitor/core@7.4.4)(firebase@10.14.1)
@@ -32,6 +29,9 @@ importers:
       '@capacitor/status-bar':
         specifier: ^7.0.3
         version: 7.0.3(@capacitor/core@7.4.4)
+      '@capgo/capacitor-social-login':
+        specifier: ^7.18.2
+        version: 7.20.0(@capacitor/core@7.4.4)
       '@radix-ui/react-label':
         specifier: ^2.0.2
         version: 2.1.8(@types/react-dom@18.3.7(@types/react@18.3.27))(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -207,15 +207,6 @@ packages:
     resolution: {integrity: sha512-qQ5m48eI/MFLQ5PxQj4PFaprjyCTLI37ElWMmNs0K8Lk3dVeOdNpB3ks8jc7yM5CDmVC73eMVk/trk3fgmrUpA==}
     engines: {node: '>=6.9.0'}
 
-  '@capacitor-firebase/authentication@7.4.0':
-    resolution: {integrity: sha512-T1ygiWfIguqGUmap87Gh836nCpnOm0C43v6O2xwrowCSx7442khs20NScm2cOebba5PX1aLWwZL19BENV148Yg==}
-    peerDependencies:
-      '@capacitor/core': '>=7.0.0'
-      firebase: ^11.2.0
-    peerDependenciesMeta:
-      firebase:
-        optional: true
-
   '@capacitor-firebase/messaging@7.4.0':
     resolution: {integrity: sha512-CpuHV9cO4ze+2+KCk6iND1XOvpLB2nR/EMv0vX9KA5CkbzytFoRE8PRDh3Kl+cLw41xw1dsltWpnzfgE9rzOfg==}
     peerDependencies:
@@ -250,6 +241,11 @@ packages:
 
   '@capacitor/status-bar@7.0.3':
     resolution: {integrity: sha512-JyRpVnKwHij9hgPWolF6PK+HT3e2HSPjN11/h2OmKxq8GAdPGARFLv+97eZl0pvuvm0Kka/LpiLb5whXISBg7Q==}
+    peerDependencies:
+      '@capacitor/core': '>=7.0.0'
+
+  '@capgo/capacitor-social-login@7.20.0':
+    resolution: {integrity: sha512-rHlEALFUonLe4sDG+qybDowh2/XDiHJ4DK9pShe1aPTGSrmA5j7kz8VbHYGqgof5xdyeC7pAY3+8PASTW+qGKg==}
     peerDependencies:
       '@capacitor/core': '>=7.0.0'
 
@@ -2930,12 +2926,6 @@ snapshots:
       '@babel/helper-string-parser': 7.27.1
       '@babel/helper-validator-identifier': 7.28.5
 
-  '@capacitor-firebase/authentication@7.4.0(@capacitor/core@7.4.4)(firebase@10.14.1)':
-    dependencies:
-      '@capacitor/core': 7.4.4
-    optionalDependencies:
-      firebase: 10.14.1
-
   '@capacitor-firebase/messaging@7.4.0(@capacitor/core@7.4.4)(firebase@10.14.1)':
     dependencies:
       '@capacitor/core': 7.4.4
@@ -2981,6 +2971,10 @@ snapshots:
       '@capacitor/core': 7.4.4
 
   '@capacitor/status-bar@7.0.3(@capacitor/core@7.4.4)':
+    dependencies:
+      '@capacitor/core': 7.4.4
+
+  '@capgo/capacitor-social-login@7.20.0(@capacitor/core@7.4.4)':
     dependencies:
       '@capacitor/core': 7.4.4
 
