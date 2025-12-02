@@ -7,9 +7,31 @@ import { logout, selectUser } from '../features/auth/authSlice';
 import { auth } from '../config/firebase';
 import { LogOut, Plus, CheckCircle, ShoppingCart, PieChart, ShoppingBag, Pencil, X, Save, Settings as SettingsIcon, Moon, Sun } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { useHousehold } from '../context/HouseholdContext';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import dayjs from 'dayjs';
+
+const UserAvatar = ({ user }) => {
+    if (user?.photoURL) {
+        return <img src={user.photoURL} alt="User" className="w-9 h-9 rounded-full border border-gray-200 dark:border-gray-700 object-cover" />;
+    }
+
+    const email = user?.email || 'User';
+    const initial = email.charAt(0).toUpperCase();
+
+    // Simple consistent color based on char code
+    const colors = ['bg-red-500', 'bg-green-500', 'bg-blue-500', 'bg-yellow-500', 'bg-purple-500', 'bg-pink-500', 'bg-indigo-500', 'bg-teal-500'];
+    const colorIndex = (email.charCodeAt(0) + email.length) % colors.length;
+    const bgColor = colors[colorIndex];
+
+    return (
+        <div className={`${bgColor} w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm border border-white dark:border-gray-800 shadow-sm`}>
+            {initial}
+        </div>
+    );
+};
 
 const Dashboard = () => {
     const dispatch = useDispatch();
@@ -17,6 +39,7 @@ const Dashboard = () => {
     const items = useSelector(selectPendingItems);
     const user = useSelector(selectUser);
     const { isDark, toggleTheme } = useTheme();
+    const { currentHousehold, loading: householdLoading } = useHousehold();
 
     const [editingId, setEditingId] = useState(null);
     const [units, setUnits] = useState(['Piece']);
@@ -30,27 +53,32 @@ const Dashboard = () => {
     });
 
     // Fetch units and types from Firestore
+    // Fetch units and types from Firestore
     useEffect(() => {
+        if (!currentHousehold) return;
+
         const unsubscribeUnits = subscribeToUnits((fetchedUnits) => {
             setUnits(fetchedUnits);
-        });
+        }, currentHousehold.id);
 
         const unsubscribeTypes = subscribeToTypes((fetchedTypes) => {
             setTypes(fetchedTypes);
-        });
+        }, currentHousehold.id);
 
         return () => {
             unsubscribeUnits();
             unsubscribeTypes();
         };
-    }, []);
+    }, [currentHousehold]);
 
     useEffect(() => {
+        if (!currentHousehold) return;
+
         const unsubscribe = subscribeToPendingItems((fetchedItems) => {
             dispatch(setItems(fetchedItems));
-        });
+        }, currentHousehold.id);
         return () => unsubscribe();
-    }, [dispatch]);
+    }, [dispatch, currentHousehold]);
 
     const handleLogout = () => {
         auth.signOut();
@@ -118,19 +146,52 @@ const Dashboard = () => {
             <header className="bg-white dark:bg-gray-800 p-4 shadow-sm sticky top-0 z-10 flex items-center justify-between">
                 <div>
                     <h1 className="text-xl font-bold text-primary-800 dark:text-primary-400">DailyNest</h1>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">Welcome, {getDisplayName(user)}</p>
+                    <div className="flex flex-col">
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Welcome, {getDisplayName(user)}</p>
+                        <p className="text-xs font-medium text-primary-600 dark:text-primary-400">{currentHousehold?.name}</p>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <button onClick={toggleTheme} className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition">
-                        {isDark ? <Sun size={20} /> : <Moon size={20} />}
-                    </button>
-                    <button onClick={() => navigate('/settings')} className="p-2 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition">
-                        <SettingsIcon size={20} />
-                    </button>
-                    <button onClick={handleLogout} className="p-2 text-gray-400 hover:text-red-500 transition">
-                        <LogOut size={20} />
-                    </button>
-                </div>
+
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <button className="rounded-full focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2">
+                            <UserAvatar user={user} />
+                        </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-2" align="end">
+                        <div className="flex flex-col gap-1">
+                            <div className="px-2 py-1.5 text-sm font-semibold text-gray-900 dark:text-gray-100 border-b border-gray-100 dark:border-gray-700 mb-1">
+                                {user?.email}
+                            </div>
+
+                            <button
+                                onClick={toggleTheme}
+                                className="flex items-center gap-2 px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition w-full text-left"
+                            >
+                                {isDark ? <Sun size={16} /> : <Moon size={16} />}
+                                <span>{isDark ? 'Light Mode' : 'Dark Mode'}</span>
+                            </button>
+
+                            <button
+                                onClick={() => navigate('/settings')}
+                                className="flex items-center gap-2 px-2 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition w-full text-left"
+                            >
+                                <SettingsIcon size={16} />
+                                <span>Settings</span>
+                            </button>
+
+                            <div className="h-px bg-gray-100 dark:bg-gray-700 my-1" />
+
+                            <button
+                                onClick={handleLogout}
+                                className="flex items-center gap-2 px-2 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition w-full text-left"
+                            >
+                                <LogOut size={16} />
+                                <span>Log Out</span>
+                            </button>
+                        </div>
+                    </PopoverContent>
+                </Popover>
             </header>
 
             {/* Content */}

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { useHousehold } from '../context/HouseholdContext';
 import { ArrowLeft, PieChart, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import dayjs from 'dayjs';
 
@@ -11,6 +12,7 @@ const Reports = () => {
     const [expenses, setExpenses] = useState([]);
     const [total, setTotal] = useState(0);
     const [selectedDate, setSelectedDate] = useState(new Date());
+    const { currentHousehold } = useHousehold();
 
     useEffect(() => {
         const fetchExpenses = async () => {
@@ -21,6 +23,7 @@ const Reports = () => {
 
                 const q = query(
                     collection(db, 'items'),
+                    where('householdId', '==', currentHousehold?.id),
                     where('status', '==', 'completed'),
                     where('purchasedAt', '>=', start),
                     where('purchasedAt', '<=', end),
@@ -43,8 +46,10 @@ const Reports = () => {
             }
         };
 
-        fetchExpenses();
-    }, [selectedDate]);
+        if (currentHousehold) {
+            fetchExpenses();
+        }
+    }, [selectedDate, currentHousehold]);
 
     const handlePrevMonth = () => {
         setSelectedDate(dayjs(selectedDate).subtract(1, 'month').toDate());
@@ -70,7 +75,10 @@ const Reports = () => {
                 <button onClick={() => navigate(-1)} className="hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded-full transition">
                     <ArrowLeft />
                 </button>
-                <h1 className="text-xl font-medium">Expense Reports</h1>
+                <div className="flex flex-col">
+                    <h1 className="text-xl font-medium">Expense Reports</h1>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{currentHousehold?.name}</span>
+                </div>
             </header>
 
             <main className="p-4 space-y-6">

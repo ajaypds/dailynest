@@ -12,6 +12,7 @@ import ManualEntry from './pages/ManualEntry';
 import Reports from './pages/Reports';
 import CompletedItems from './pages/CompletedItems';
 import Settings from './pages/Settings';
+import ManageAccess from './pages/ManageAccess';
 import ProtectedRoute from './components/ProtectedRoute';
 import { initializePushNotifications, addPushNotificationListeners } from './services/notificationService';
 import { saveUserToken } from './services/firestoreService';
@@ -34,6 +35,10 @@ function App() {
                     displayName: userAuth.displayName,
                     photoURL: userAuth.photoURL,
                 }));
+                // Sync user profile to Firestore
+                import('./services/firestoreService').then(({ syncUserProfile }) => {
+                    syncUserProfile(userAuth);
+                });
             } else {
                 dispatch(logout());
             }
@@ -166,6 +171,11 @@ function App() {
             <Route path="/settings" element={
                 <ProtectedRoute>
                     <Settings />
+                </ProtectedRoute>
+            } />
+            <Route path="/manage-access" element={
+                <ProtectedRoute>
+                    <ManageAccess />
                 </ProtectedRoute>
             } />
             <Route path="*" element={<Navigate to="/" replace />} />

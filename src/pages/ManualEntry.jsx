@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../features/auth/authSlice';
 import { addItem, subscribeToTypes, subscribeToUnits } from '../services/firestoreService';
+import { useHousehold } from '../context/HouseholdContext';
 import { ArrowLeft, Check } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +15,7 @@ import { format } from "date-fns";
 const ManualEntry = () => {
     const navigate = useNavigate();
     const user = useSelector(selectUser);
+    const { currentHousehold } = useHousehold();
     const [loading, setLoading] = useState(false);
     const [itemTypes, setItemTypes] = useState(['Grocery']);
     const [units, setUnits] = useState(['Piece']);
@@ -28,26 +30,29 @@ const ManualEntry = () => {
     });
 
     // Fetch types and units from Firestore
+    // Fetch types and units from Firestore
     useEffect(() => {
+        if (!currentHousehold) return;
+
         const unsubscribeTypes = subscribeToTypes((types) => {
             setItemTypes(types);
             if (types.length > 0 && !types.includes(formData.type)) {
                 setFormData(prev => ({ ...prev, type: types[0] }));
             }
-        });
+        }, currentHousehold.id);
 
         const unsubscribeUnits = subscribeToUnits((fetchedUnits) => {
             setUnits(fetchedUnits);
             if (fetchedUnits.length > 0 && !fetchedUnits.includes(formData.unit)) {
                 setFormData(prev => ({ ...prev, unit: fetchedUnits[0] }));
             }
-        });
+        }, currentHousehold.id);
 
         return () => {
             unsubscribeTypes();
             unsubscribeUnits();
         };
-    }, []);
+    }, [currentHousehold]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -75,7 +80,7 @@ const ManualEntry = () => {
                 purchasedAt: new Date(formData.purchasedAt),
                 dueDate: new Date(formData.purchasedAt),
                 note: formData.note,
-            }, user.uid);
+            }, user.uid, currentHousehold.id);
             navigate('/');
         } catch (error) {
             console.error("Error adding manual entry", error);
@@ -91,7 +96,10 @@ const ManualEntry = () => {
                 <button onClick={() => navigate(-1)} className="hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded-full transition">
                     <ArrowLeft />
                 </button>
-                <h1 className="text-xl font-medium">Quick Expense</h1>
+                <div className="flex flex-col">
+                    <h1 className="text-xl font-medium">Quick Expense</h1>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{currentHousehold?.name}</span>
+                </div>
             </header>
 
             <main className="p-6 max-w-lg mx-auto">

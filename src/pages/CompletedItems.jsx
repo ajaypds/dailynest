@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { fetchCompletedItems, updateItem, subscribeToTypes } from '../services/firestoreService';
+import { useHousehold } from '../context/HouseholdContext';
 import { setItems, selectCompletedItems } from '../features/items/itemsSlice';
 import { ArrowLeft, ShoppingBag, Pencil, Save, X, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -19,6 +20,7 @@ const CompletedItems = () => {
     // to avoid complex merging logic in redux for now, or we can sync.
     // Let's use local state for simplicity as per plan.
     const [items, setLocalItems] = useState([]);
+    const { currentHousehold } = useHousehold();
 
     const [types, setTypes] = useState(['Grocery']);
     const [editingId, setEditingId] = useState(null);
@@ -31,26 +33,51 @@ const CompletedItems = () => {
     const observer = useRef();
 
     useEffect(() => {
+        if (!currentHousehold) return;
+
         const unsubscribeTypes = subscribeToTypes((fetchedTypes) => {
             setTypes(fetchedTypes);
-        });
+        }, currentHousehold.id);
 
-        // Initial load is handled by the IntersectionObserver since the sentinel is visible initially
-        loadItems();
+        // Reset state when household changes
+        setLocalItems([]);
+        setLastDoc(null);
+        setHasMore(true);
+        // We need to trigger loadItems, but loadItems depends on state which might not be updated yet.
+        // So we can just rely on the effect below or call a reset function.
 
+        // Actually, let's just reset here and let the next effect or the observer trigger load.
+        // But observer might not trigger if list is empty and sentinel is visible? 
+        // Let's manually trigger loadItems after a small delay or state update.
+
+        // Better approach: Add currentHousehold to dependency of a new effect that resets and loads.
+
+    }, [currentHousehold]);
+
+    useEffect(() => {
+        if (currentHousehold) {
+            loadItems(true); // true for reset
+        }
         return () => {
-            unsubscribeTypes();
+            // cleanup if needed
         };
-    }, []);
+    }, [currentHousehold]);
 
-    const loadItems = async () => {
-        if (loading || !hasMore) return;
+    // We need to modify the original useEffect to not run on mount if we handle it here,
+    // or just let it be. The original one had [] dependency.
+    // Let's remove the original [] effect and split it.
+
+
+    const loadItems = async (reset = false) => {
+        if (!currentHousehold) return;
+        if (loading || (!hasMore && !reset)) return;
 
         setLoading(true);
         try {
             const { items: newItems, lastDoc: newLastDoc } = await fetchCompletedItems({
-                lastDoc,
-                pageSize: 20
+                lastDoc: reset ? null : lastDoc,
+                pageSize: 20,
+                householdId: currentHousehold.id
             });
 
             if (newItems.length < 20) {
@@ -58,12 +85,14 @@ const CompletedItems = () => {
             }
 
             setLocalItems(prev => {
+                if (reset) return newItems;
                 // Deduplicate items to prevent double rendering
                 const existingIds = new Set(prev.map(i => i.id));
                 const uniqueNewItems = newItems.filter(i => !existingIds.has(i.id));
                 return [...prev, ...uniqueNewItems];
             });
             setLastDoc(newLastDoc);
+            if (reset) setHasMore(newItems.length >= 20);
         } catch (error) {
             console.error("Failed to load items", error);
         } finally {
@@ -149,7 +178,10 @@ const CompletedItems = () => {
                 <button onClick={() => navigate(-1)} className="hover:bg-gray-100 dark:hover:bg-gray-700 p-1 rounded-full transition">
                     <ArrowLeft />
                 </button>
-                <h1 className="text-xl font-medium">Purchase History</h1>
+                <div className="flex flex-col">
+                    <h1 className="text-xl font-medium">Purchase History</h1>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{currentHousehold?.name}</span>
+                </div>
             </header>
 
             <main className="p-4 space-y-6 pb-20">

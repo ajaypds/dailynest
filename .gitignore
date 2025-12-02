@@ -44,3 +44,9 @@ capacitor.config.json
 
 # CMD
 build.bat
+
+#Backup Data
+backup_data.json
+
+#MISC
+debug_user_profile.js

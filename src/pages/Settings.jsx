@@ -6,10 +6,16 @@ import {
     addType,
     addUnit,
     deleteType,
-    deleteUnit
+    deleteUnit,
+    subscribeToInvitations,
+    acceptInvitation,
+    rejectInvitation
 } from '../services/firestoreService';
-import { ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Users, Mail, Check, X } from 'lucide-react';
 import { Input } from "@/components/ui/input";
+import { useHousehold } from '../context/HouseholdContext';
+import { useSelector } from 'react-redux';
+import { selectUser } from '../features/auth/authSlice';
 
 import { App } from '@capacitor/app';
 
@@ -21,6 +27,9 @@ const Settings = () => {
     const [newUnit, setNewUnit] = useState('');
     const [loading, setLoading] = useState({ type: false, unit: false });
     const [appVersion, setAppVersion] = useState('1.0.0');
+    const { currentHousehold } = useHousehold();
+    const user = useSelector(selectUser);
+    const [invitations, setInvitations] = useState([]);
 
     useEffect(() => {
         const getAppVersion = async () => {
@@ -36,19 +45,46 @@ const Settings = () => {
     }, []);
 
     useEffect(() => {
+        if (!user?.email) return;
+
+        const unsubscribeInvitations = subscribeToInvitations(user.email, (invites) => {
+            setInvitations(invites);
+        });
+
+        if (!currentHousehold) return;
+
         const unsubscribeTypes = subscribeToTypesWithIds((fetchedTypes) => {
             setTypes(fetchedTypes);
-        });
+        }, currentHousehold.id);
 
         const unsubscribeUnits = subscribeToUnitsWithIds((fetchedUnits) => {
             setUnits(fetchedUnits);
-        });
+        }, currentHousehold.id);
 
         return () => {
+            unsubscribeInvitations();
             unsubscribeTypes();
             unsubscribeUnits();
         };
-    }, []);
+    }, [currentHousehold, user]);
+
+    const handleAcceptInvitation = async (invitation) => {
+        try {
+            await acceptInvitation(invitation.id, user.uid, invitation.householdId);
+            alert('Invitation accepted!');
+        } catch (error) {
+            alert('Failed to accept invitation');
+        }
+    };
+
+    const handleRejectInvitation = async (id) => {
+        if (!confirm('Reject this invitation?')) return;
+        try {
+            await rejectInvitation(id);
+        } catch (error) {
+            alert('Failed to reject invitation');
+        }
+    };
 
     const handleAddType = async (e) => {
         e.preventDefault();
@@ -56,7 +92,7 @@ const Settings = () => {
 
         setLoading({ ...loading, type: true });
         try {
-            await addType(newType.trim());
+            await addType(newType.trim(), currentHousehold.id);
             setNewType('');
         } catch (error) {
             alert('Failed to add type');
@@ -71,7 +107,7 @@ const Settings = () => {
 
         setLoading({ ...loading, unit: true });
         try {
-            await addUnit(newUnit.trim());
+            await addUnit(newUnit.trim(), currentHousehold.id);
             setNewUnit('');
         } catch (error) {
             alert('Failed to add unit');
@@ -110,6 +146,59 @@ const Settings = () => {
             </header>
 
             <main className="p-6 max-w-2xl mx-auto space-y-8">
+
+                {/* Access Management Link */}
+                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                    <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Sharing & Access</h2>
+                    <button
+                        onClick={() => navigate('/manage-access')}
+                        className="w-full flex items-center justify-between p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg hover:bg-primary-100 dark:hover:bg-primary-900/30 transition text-primary-700 dark:text-primary-300 font-medium"
+                    >
+                        <div className="flex items-center gap-3">
+                            <Users size={20} />
+                            <span>Manage Household Members</span>
+                        </div>
+                        <ArrowLeft className="rotate-180" size={20} />
+                    </button>
+                </section>
+
+                {/* Invitations Section */}
+                {invitations.length > 0 && (
+                    <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                        <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                            <Mail size={20} /> Pending Invitations
+                        </h2>
+                        <div className="space-y-3">
+                            {invitations.map(invite => (
+                                <div key={invite.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                    <div>
+                                        <p className="font-medium text-gray-900 dark:text-gray-100">Invitation to join a household</p>
+                                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                                            From: {invite.fromEmail || `User ID: ${invite.fromUser}`}
+                                        </p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => handleAcceptInvitation(invite)}
+                                            className="p-2 bg-green-100 text-green-700 rounded-full hover:bg-green-200 transition"
+                                            title="Accept"
+                                        >
+                                            <Check size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleRejectInvitation(invite.id)}
+                                            className="p-2 bg-red-100 text-red-700 rounded-full hover:bg-red-200 transition"
+                                            title="Reject"
+                                        >
+                                            <X size={18} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+                )}
+
                 {/* Item Types Section */}
                 <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
                     <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-4">Item Categories</h2>
