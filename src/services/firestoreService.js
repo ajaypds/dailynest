@@ -489,3 +489,24 @@ export const updateLastActiveHousehold = async (userId, householdId) => {
         // Don't throw, just log. This is a preference update, not critical.
     }
 };
+
+export const createHousehold = async (userId, householdName) => {
+    try {
+        // 1. Create the household document
+        const householdRef = await addDoc(collection(db, 'households'), {
+            name: householdName,
+            ownerId: userId,
+            members: [userId],
+            createdAt: serverTimestamp()
+        });
+
+        // 2. Set as default and last active for the user
+        await setDefaultHousehold(userId, householdRef.id);
+        await updateLastActiveHousehold(userId, householdRef.id);
+
+        return householdRef.id;
+    } catch (error) {
+        console.error("Error creating household:", error);
+        throw error;
+    }
+};

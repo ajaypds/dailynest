@@ -4,7 +4,7 @@ import { db } from '../config/firebase';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../features/auth/authSlice';
 
-import { updateLastActiveHousehold } from '../services/firestoreService';
+import { updateLastActiveHousehold, createHousehold } from '../services/firestoreService';
 
 const HouseholdContext = createContext();
 
@@ -88,6 +88,16 @@ export const HouseholdProvider = ({ children }) => {
                 }
             } else {
                 setCurrentHousehold(null);
+                // Auto-create household for new users
+                if (user && fetchedHouseholds.length === 0) {
+                    try {
+                        console.log("No households found for new user, creating default...");
+                        await createHousehold(user.uid, "My Household");
+                        // The snapshot listener will fire again with the new household
+                    } catch (e) {
+                        console.error("Error creating default household:", e);
+                    }
+                }
             }
 
             setLoading(false);
