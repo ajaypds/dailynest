@@ -4,6 +4,7 @@ import { collection, query, where, getDocs, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useHousehold } from '../context/HouseholdContext';
 import { ArrowLeft, PieChart, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import dayjs from 'dayjs';
 
 const Reports = () => {
@@ -12,6 +13,8 @@ const Reports = () => {
     const [expenses, setExpenses] = useState([]);
     const [total, setTotal] = useState(0);
     const [selectedDate, setSelectedDate] = useState(new Date());
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
     const { currentHousehold } = useHousehold();
 
     useEffect(() => {
@@ -31,10 +34,14 @@ const Reports = () => {
                 );
 
                 const snapshot = await getDocs(q);
-                const items = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
+                const items = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return {
+                        id: doc.id,
+                        ...data,
+                        purchasedAt: data.purchasedAt?.toDate ? data.purchasedAt.toDate() : new Date(data.purchasedAt)
+                    };
+                });
 
                 setExpenses(items);
                 const sum = items.reduce((acc, item) => acc + (item.price || 0), 0);
@@ -69,6 +76,16 @@ const Reports = () => {
         return acc;
     }, {});
 
+    const handleCategoryClick = (category) => {
+        setSelectedCategory(category);
+        setIsDialogOpen(true);
+    };
+
+    const getCategoryExpenses = () => {
+        if (!selectedCategory) return [];
+        return expenses.filter(e => (e.type || 'Other') === selectedCategory);
+    };
+
     return (
         <div className="h-screen overflow-y-auto bg-gray-50 dark:bg-gray-900">
             <header className="bg-white dark:bg-gray-800 p-4 shadow-md sticky top-0 z-10 flex items-center gap-4 text-gray-800 dark:text-gray-200">
@@ -81,7 +98,7 @@ const Reports = () => {
                 </div>
             </header>
 
-            <main className="p-4 space-y-6">
+            <main className="p-4 space-y-6 pb-20">
                 {/* Month Selector */}
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
                     <div className="flex items-center justify-between">
@@ -130,7 +147,11 @@ const Reports = () => {
                             {Object.entries(groupedExpenses)
                                 .sort(([, a], [, b]) => b.total - a.total)
                                 .map(([category, data]) => (
-                                    <div key={category} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                                    <div
+                                        key={category}
+                                        onClick={() => handleCategoryClick(category)}
+                                        className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition active:scale-[0.98]"
+                                    >
                                         <div className="flex-1">
                                             <p className="font-medium text-gray-900 dark:text-gray-100">{category}</p>
                                             <p className="text-xs text-gray-500 dark:text-gray-400">{data.count} items</p>
@@ -147,6 +168,32 @@ const Reports = () => {
                     </div>
                 )}
             </main>
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>{selectedCategory} History</DialogTitle>
+                        <DialogDescription>
+                            {dayjs(selectedDate).format('MMMM YYYY')}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-3 mt-2">
+                        {getCategoryExpenses().map(expense => (
+                            <div key={expense.id} className="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-2 last:border-0">
+                                <div>
+                                    <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{expense.name}</p>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        {dayjs(expense.purchasedAt).format('MMM D, YYYY')}
+                                    </p>
+                                </div>
+                                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                    ₹{expense.price?.toFixed(2)}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 };
