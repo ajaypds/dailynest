@@ -170,14 +170,14 @@ const Reports = () => {
             </main>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
+                <DialogContent className="max-w-md max-h-[80vh] flex flex-col">
                     <DialogHeader>
                         <DialogTitle>{selectedCategory} History</DialogTitle>
                         <DialogDescription>
                             {dayjs(selectedDate).format('MMMM YYYY')}
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-3 mt-2">
+                    <div className="space-y-3 overflow-y-auto pr-2">
                         {getCategoryExpenses().map(expense => (
                             <div key={expense.id} className="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-2 last:border-0">
                                 <div>
