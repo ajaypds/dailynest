@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectUser } from '../features/auth/authSlice';
-import { addItem, subscribeToTypes, subscribeToUnits } from '../services/firestoreService';
+import { addItem, subscribeToTypes, subscribeToUnits, addType, addUnit } from '../services/firestoreService';
 import { useHousehold } from '../context/HouseholdContext';
 import { ArrowLeft, Plus } from 'lucide-react';
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { format } from "date-fns";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 const AddItem = () => {
     const navigate = useNavigate();
@@ -27,6 +28,8 @@ const AddItem = () => {
         dueDate: new Date().toISOString().split('T')[0],
         note: '',
     });
+    const [newItemDialog, setNewItemDialog] = useState({ isOpen: false, type: 'category' });
+    const [newItemName, setNewItemName] = useState('');
 
     // Fetch types and units from Firestore
     // Fetch types and units from Firestore
@@ -59,7 +62,30 @@ const AddItem = () => {
     };
 
     const handleSelectChange = (name, value) => {
-        setFormData(prev => ({ ...prev, [name]: value }));
+        if (value === 'new') {
+            setNewItemDialog({ isOpen: true, type: name === 'type' ? 'category' : 'unit' });
+            setNewItemName('');
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
+    };
+
+    const handleSaveNewItem = async () => {
+        if (!newItemName.trim()) return;
+
+        try {
+            if (newItemDialog.type === 'category') {
+                await addType(newItemName, currentHousehold.id);
+                setFormData(prev => ({ ...prev, type: newItemName }));
+            } else {
+                await addUnit(newItemName, currentHousehold.id);
+                setFormData(prev => ({ ...prev, unit: newItemName }));
+            }
+            setNewItemDialog(prev => ({ ...prev, isOpen: false }));
+        } catch (error) {
+            console.error("Error adding new item:", error);
+            alert("Failed to add new item");
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -121,6 +147,7 @@ const AddItem = () => {
                                     {itemTypes.map(type => (
                                         <SelectItem key={type} value={type}>{type}</SelectItem>
                                     ))}
+                                    <SelectItem value="new" className="text-primary-600 font-medium">+ Add New...</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -156,6 +183,7 @@ const AddItem = () => {
                                     {units.map(unit => (
                                         <SelectItem key={unit} value={unit}>{unit}</SelectItem>
                                     ))}
+                                    <SelectItem value="new" className="text-primary-600 font-medium">+ Add New...</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -181,6 +209,36 @@ const AddItem = () => {
                     </form>
                 </div>
             </main>
+
+            <Dialog open={newItemDialog.isOpen} onOpenChange={(open) => setNewItemDialog(prev => ({ ...prev, isOpen: open }))}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Add New {newItemDialog.type === 'category' ? 'Category' : 'Unit'}</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4 space-y-2">
+                        <Label>Name</Label>
+                        <Input
+                            value={newItemName}
+                            onChange={(e) => setNewItemName(e.target.value)}
+                            placeholder={`Enter ${newItemDialog.type} name`}
+                        />
+                    </div>
+                    <DialogFooter>
+                        <button
+                            onClick={() => setNewItemDialog(prev => ({ ...prev, isOpen: false }))}
+                            className="px-4 py-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleSaveNewItem}
+                            className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition"
+                        >
+                            Save
+                        </button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div >
     );
 };
