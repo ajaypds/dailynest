@@ -9,8 +9,11 @@ import { LogOut, Plus, CheckCircle, ShoppingCart, PieChart, ShoppingBag, Pencil,
 import { useTheme } from '../context/ThemeContext';
 import { useHousehold } from '../context/HouseholdContext';
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DatePicker } from "@/components/ui/date-picker";
+import { format } from "date-fns";
 import dayjs from 'dayjs';
 
 const UserAvatar = ({ user }) => {
@@ -49,7 +52,8 @@ const Dashboard = () => {
         quantity: '',
         unit: '',
         type: '',
-        note: ''
+        note: '',
+        dueDate: ''
     });
 
     // Fetch units and types from Firestore
@@ -92,13 +96,14 @@ const Dashboard = () => {
             quantity: item.quantity,
             unit: item.unit,
             type: item.type,
-            note: item.note || ''
+            note: item.note || '',
+            dueDate: item.dueDate || ''
         });
     };
 
     const handleCancelEdit = () => {
         setEditingId(null);
-        setEditForm({ name: '', quantity: '', unit: '', type: '', note: '' });
+        setEditForm({ name: '', quantity: '', unit: '', type: '', note: '', dueDate: '' });
     };
 
     const handleSaveEdit = async () => {
@@ -110,7 +115,8 @@ const Dashboard = () => {
                 quantity: Number(editForm.quantity),
                 unit: editForm.unit,
                 type: editForm.type,
-                note: editForm.note
+                note: editForm.note,
+                dueDate: editForm.dueDate ? new Date(editForm.dueDate) : null
             });
             setEditingId(null);
         } catch (error) {
@@ -261,14 +267,21 @@ const Dashboard = () => {
                                             </Select>
                                         </div>
                                         <div className="space-y-1">
+                                            <label className="text-xs text-gray-500 dark:text-gray-400 font-medium ml-1">Due Date</label>
+                                            <DatePicker
+                                                date={editForm.dueDate ? new Date(editForm.dueDate) : undefined}
+                                                setDate={(date) => setEditForm(prev => ({ ...prev, dueDate: date ? format(date, 'yyyy-MM-dd') : '' }))}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
                                             <label className="text-xs text-gray-500 dark:text-gray-400 font-medium ml-1">Note (Optional)</label>
-                                            <Input
-                                                type="text"
+                                            <Textarea
                                                 name="note"
                                                 value={editForm.note}
                                                 onChange={handleChange}
                                                 placeholder="Add a note..."
                                                 className="italic text-gray-600 dark:text-gray-300"
+                                                rows={2}
                                             />
                                         </div>
                                         <div className="flex justify-end gap-3 pt-2">
