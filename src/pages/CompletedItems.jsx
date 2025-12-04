@@ -1,10 +1,10 @@
 import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { fetchCompletedItems, updateItem, subscribeToTypes } from '../services/firestoreService';
+import { fetchCompletedItems, updateItem, subscribeToTypes, deleteItem } from '../services/firestoreService';
 import { useHousehold } from '../context/HouseholdContext';
 import { setItems, selectCompletedItems } from '../features/items/itemsSlice';
-import { ArrowLeft, ShoppingBag, Pencil, Save, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Pencil, Save, X, Loader2, Trash2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import dayjs from 'dayjs';
 import isToday from 'dayjs/plugin/isToday';
@@ -143,6 +143,18 @@ const CompletedItems = () => {
         }
     };
 
+    const handleDelete = async (item) => {
+        if (window.confirm(`Are you sure you want to delete "${item.name}"? This cannot be undone.`)) {
+            try {
+                await deleteItem(item.id);
+                setLocalItems(prev => prev.filter(i => i.id !== item.id));
+            } catch (error) {
+                console.error("Failed to delete item", error);
+                alert("Failed to delete item");
+            }
+        }
+    };
+
     const groupedItems = useMemo(() => {
         const groups = {};
         items.forEach(item => {
@@ -214,6 +226,14 @@ const CompletedItems = () => {
                                                             className="text-gray-300 dark:text-gray-600 hover:text-primary-600 dark:hover:text-primary-400 transition"
                                                         >
                                                             <Pencil size={14} />
+                                                        </button>
+                                                    )}
+                                                    {editingId !== item.id && (
+                                                        <button
+                                                            onClick={() => handleDelete(item)}
+                                                            className="text-gray-300 dark:text-gray-600 hover:text-red-600 dark:hover:text-red-400 transition ml-2"
+                                                        >
+                                                            <Trash2 size={14} />
                                                         </button>
                                                     )}
                                                 </div>
